@@ -27,15 +27,14 @@ public class MySecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            .csrf().disable()  // Disable CSRF since we're using stateless JWT
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/token").permitAll() // Allow public access to the /token endpoint
                 .anyRequest().authenticated() // All other requests require authentication
-            ) // Close the lambda here
+            )
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless session management
             .and()
-            .formLogin() // Enable form login, customize if needed
-            .and()
-            .csrf().disable(); // Disable CSRF for simplicity (consider enabling in production)
+            .authenticationProvider(authenticationProvider()); // Use the custom authentication provider
         
         return http.build();
     }
