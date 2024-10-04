@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -23,21 +24,21 @@ public class MySecurityConfig {
     public MySecurityConfig(CustomerUserDetailService customerUserDetailService) {
         this.customerUserDetailService = customerUserDetailService;
     }
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf().disable()  // Disable CSRF since we're using stateless JWT
-            .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/token").permitAll() // Allow public access to the /token endpoint
-                .anyRequest().authenticated() // All other requests require authentication
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/login", "/token", "/public/**").permitAll() // Add '/token' here
+                .anyRequest().authenticated()
             )
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless session management
-            .and()
-            .authenticationProvider(authenticationProvider()); // Use the custom authentication provider
-        
+            .formLogin(login -> login
+                .loginPage("/login")
+                .permitAll()
+            )
+            .csrf().disable(); // Only if you know what you're doing
         return http.build();
     }
+
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
@@ -46,14 +47,15 @@ public class MySecurityConfig {
         authProvider.setPasswordEncoder(passwordEncoder()); // Set password encoder
         return authProvider;
     }
-
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
         return authConfig.getAuthenticationManager();
     }
 
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
 }
